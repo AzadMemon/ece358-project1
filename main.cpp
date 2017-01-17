@@ -5,7 +5,7 @@
 #include <iomanip>
 
 struct packet {
-    int departure_time;
+    int ticks_until_departure;
 };
 
 int arrival_time;
@@ -27,9 +27,7 @@ int TICK_SIZE = 10000;
 int packet_size = 2000;
 //rate in seconds
 int transmission_rate = 1000000 / TICK_SIZE;
-
-int departure_time;
-
+int idle_counter = 0;
 
 int calculate_arrival_time() {
 
@@ -47,26 +45,27 @@ void arrival(int current_time) {
     if (current_time > arrival_time) {
         arrival_time = current_time + calculate_arrival_time();
 
-        if (router_queue.size() > 0) {
-            departure_time = router_queue.back().departure_time + (packet_size / transmission_rate);
-        } else {
-            departure_time = current_time +  (packet_size / transmission_rate);
-        }
-
         if (queue_size == -1 || (queue_size > 0 && router_queue.size() < queue_size)) {
             std::cout << "Added new packet at time " << current_time << std::endl;
             packet new_packet;
-            new_packet.departure_time = departure_time;
+            new_packet.ticks_until_departure = (packet_size / transmission_rate);
             router_queue.push(new_packet);
         }
     }
 
 }
 
-void departure(int current_time) {
-    if (router_queue.size() > 0 && current_time == router_queue.front().departure_time) {
-        std::cout << "Removed packet at time " << current_time << std::endl ;
-        router_queue.pop();
+void server(int current_time) {
+    if (router_queue.size() > 0) {ticks_until_departure
+        // TODO: Does the first tick count, if so, this should check if == 1.
+        if (router_queue.front().ticks_until_departure == 1) {
+            std::cout << "Removed packet at time " << current_time << std::endl;
+            router_queue.pop();
+        } else {
+            router_queue.front().ticks_until_departure -= 1;
+        }
+    } else {
+        idle_counter+=1;
     }
 }
 
@@ -74,7 +73,6 @@ void departure(int current_time) {
 int main()
 {
   std::cout << "Hello!";
-
 
   // To create a new random uniform number:
   // double dirty_uniform_number =  distribution(generator);
@@ -89,7 +87,9 @@ int main()
       }
 
       arrival(i);
-      departure(i);
+      server(i);
   }
+
+    std::cout << idle_counter  << std::endl;
 
 }
