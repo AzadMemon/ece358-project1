@@ -6,6 +6,7 @@
 
 struct packet {
     int ticks_until_departure;
+    int arrival_time;
 };
 
 int arrival_time;
@@ -24,12 +25,16 @@ int queue_size = -1;
 double lambda = 0;
 int TICK_SIZE = 1 / 0.000001;
 // wut is dis
-int L_packet_size = 2000;
+double L_packet_size = 2000;
 //rate in seconds
-int C_transmission_rate = 1000000; 
+double C_transmission_rate = 1000000; 
 int idle_counter = 0;
 
 double num_of_packets_in_queue_total = 0;
+
+double total_num_packets_generated = 0;
+
+double total_sojourn_time = 0;
 
 int calculate_arrival_time() {
 
@@ -38,8 +43,6 @@ int calculate_arrival_time() {
     // Arrival time in seconds
     double arrival_time = (-1 / lambda) * log (1 - U);
 
-    // std::cout << "Arrival Time: " << arrival_time << std::endl;
-
     // Currently assuming 1 tick = 100 millisecond (100 * 10^-3)
     return arrival_time * TICK_SIZE;
 
@@ -47,13 +50,16 @@ int calculate_arrival_time() {
 
 void arrival(int current_time) {
     if (current_time > arrival_time) {
+
         arrival_time = current_time + calculate_arrival_time();
 
         if (queue_size == -1 || (queue_size > 0 && router_queue.size() < queue_size)) {
-            //std::cout << "Added new packet at time " << current_time << std::endl;
             packet new_packet;
-            new_packet.ticks_until_departure = (L_packet_size / C_transmission_rate / TICK_SIZE);
+            new_packet.ticks_until_departure = (L_packet_size / C_transmission_rate * TICK_SIZE);                                              
+
+            new_packet.arrival_time = current_time;
             router_queue.push(new_packet);
+            total_num_packets_generated++;
         }
     }
 
@@ -63,7 +69,11 @@ void server(int current_time) {
     if (router_queue.size() > 0) {
         // TODO: Does the first tick count, if so, this should check if == 1.
         if (router_queue.front().ticks_until_departure == 1) {
-            //std::cout << "Removed packet at time " << current_time << std::endl;
+            if( (current_time - router_queue.front().arrival_time) < 0)
+            {
+                std::cout << current_time << "and " <<  router_queue.front().arrival_time << std::endl;
+            }
+            total_sojourn_time += (current_time - router_queue.front().arrival_time);
             router_queue.pop();
         } else {
             router_queue.front().ticks_until_departure -= 1;
@@ -93,19 +103,32 @@ int yolo()
 
 int main() {
     for(double r0 = 0.2; r0 <= 0.9; r0+=0.1) {
-        queue_size = -1;
-        TICKS = 100000*1000;
-        TICK_SIZE = 1 / 0.000001;
-        L_packet_size = 2000;
-        C_transmission_rate = 1000000;
-        idle_counter = 0;
-        num_of_packets_in_queue_total = 0;
-        lambda = r0 * C_transmission_rate / L_packet_size;
 
-        yolo();
+        for (int i = 1; i < 3; i++ ) {
 
-        std::cout << "Idle counter: " << idle_counter  << std::endl;
-        std::cout << "E[N] " << num_of_packets_in_queue_total / TICKS << std::endl;
+            std::cout << "Experiment " << i << std::endl;
+
+
+            total_num_packets_generated = 0;
+
+            total_sojourn_time = 0;
+
+            queue_size = -1;
+            TICKS = 5000000;
+            TICK_SIZE = 1 / 0.000001;
+            L_packet_size = 2000;
+            C_transmission_rate = 1000000;
+            idle_counter = 0;
+            num_of_packets_in_queue_total = 0;
+            lambda = r0 * C_transmission_rate / L_packet_size;
+
+            yolo();
+
+            std::cout << "Idle counter: " << idle_counter  << std::endl;
+            std::cout << "E[N] " << num_of_packets_in_queue_total / TICKS << std::endl;
+            std::cout << "E[T] " << total_sojourn_time  << std::endl;
+
+        }
 
 
 
