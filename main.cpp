@@ -11,6 +11,10 @@ struct Packet {
 
 int arrival_time;
 
+double average_idle;
+double average_en;
+double average_et;
+
 std::default_random_engine generator;
 std::uniform_real_distribution<double> distribution(0.0,1.0);
 
@@ -27,7 +31,7 @@ int TICKS = 100000*1000;
 int TICK_SIZE = 1 / 0.000001;
 int queue_size = -1;
 double L_packet_size = 2000;
-double C_transmission_rate = 1000000; 
+double C_transmission_rate = 1000000;   
 
 // According to p = lambda* L / C
 double lambda = 0;
@@ -84,15 +88,14 @@ int yolo() {
 }
 
 int main() {
+    std::cout << "Row, Idle Counter, E[N], E[T]" << std::endl;
     for(double r0 = 0.2; r0 <= 0.9; r0+=0.1) {
-        for (int i = 1; i <= 5; i++) {
+        for (int i = 0; i <= 4; i++) {
             int router_size = router_queue.size();
             for (int j = 0; j < router_size; j++) {
                 router_queue.pop();
             }
             
-            std::cout << "Experiment " << i << std::endl;
-
             total_num_packets_generated = 0;
             total_sojourn_time = 0;
             idle_counter = 0;
@@ -109,9 +112,14 @@ int main() {
 
             yolo();
 
-            std::cout << "Idle counter: " << idle_counter << std::endl;
-            std::cout << "E[N] " << num_of_packets_in_queue_total / TICKS << std::endl;
-            std::cout << "E[T] " << total_sojourn_time  << std::endl;
+            average_idle += idle_counter;
+            average_en += num_of_packets_in_queue_total / TICKS;
+            average_et += total_sojourn_time;
         }
+
+        std::cout << r0 << ", " << average_idle/5 << ", " << average_en/5 << ", " << average_et/5 << ", " << std::endl;
+        average_idle = 0;
+        average_en = 0;
+        average_et = 0;
     }
 }
