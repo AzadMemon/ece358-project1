@@ -12,6 +12,7 @@ struct Packet {
 int arrival_time;
 
 double average_idle;
+double average_loss;
 double average_en;
 double average_et;
 
@@ -25,6 +26,7 @@ int idle_counter = 0;
 double num_of_packets_in_queue_total = 0;
 double total_num_packets_generated = 0;
 double total_sojourn_time = 0;
+double loss_counter = 0;
 
 // Parameters
 int TICKS = 100000*1000;
@@ -54,7 +56,9 @@ void arrival(int current_time) {
             new_packet->arrival_time = current_time;
             
             router_queue.push(new_packet);
-            total_num_packets_generated++;
+            total_num_packets_generated += 1;
+        } else {
+            loss_counter += 1;
         }
 
         arrival_time = current_time + calculate_arrival_time();
@@ -88,38 +92,44 @@ int yolo() {
 }
 
 int main() {
-    std::cout << "Row, Idle Counter, E[N], E[T]" << std::endl;
-    for(double r0 = 0.2; r0 <= 0.9; r0+=0.1) {
-        for (int i = 0; i <= 4; i++) {
-            int router_size = router_queue.size();
-            for (int j = 0; j < router_size; j++) {
-                router_queue.pop();
+    int queue_sizes[3] = {10, 25, 50};
+    std::cout << "Queue Size, Row, Loss Counter, Idle Counter, E[N], E[T]" << std::endl;
+    for (int k = 0; k < 3; k++) {
+        for(double r0 = 0.5; r0 <= 1.5; r0+=0.1) {
+            for (int i = 0; i <= 4; i++) {
+                int router_size = router_queue.size();
+                for (int j = 0; j < router_size; j++) {
+                    router_queue.pop();
+                }
+                
+                total_num_packets_generated = 0;
+                total_sojourn_time = 0;
+                idle_counter = 0;
+                num_of_packets_in_queue_total = 0;
+                loss_counter = 0;
+
+                // Parameters
+                queue_size = queue_sizes[k];
+                TICKS = 5000000;
+                TICK_SIZE = 1 / 0.000001;
+                L_packet_size = 2000;
+                C_transmission_rate = 1000000;
+
+                lambda = r0 * C_transmission_rate / L_packet_size;
+
+                yolo();
+
+                average_idle += idle_counter;
+                average_loss += loss_counter/total_num_packets_generated;
+                average_en += num_of_packets_in_queue_total / TICKS;
+                average_et += total_sojourn_time;
             }
-            
-            total_num_packets_generated = 0;
-            total_sojourn_time = 0;
-            idle_counter = 0;
-            num_of_packets_in_queue_total = 0;
 
-            // Parameters
-            queue_size = -1;
-            TICKS = 5000000;
-            TICK_SIZE = 1 / 0.000001;
-            L_packet_size = 2000;
-            C_transmission_rate = 1000000;
-
-            lambda = r0 * C_transmission_rate / L_packet_size;
-
-            yolo();
-
-            average_idle += idle_counter;
-            average_en += num_of_packets_in_queue_total / TICKS;
-            average_et += total_sojourn_time;
+            std::cout << queue_sizes[k] << ", " << r0 << ", " << average_loss/5 << ", " << average_idle/5 << ", " << average_en/5 << ", " << average_et/5 << std::endl;
+            average_idle = 0;
+            average_loss = 0;
+            average_en = 0;
+            average_et = 0;
         }
-
-        std::cout << r0 << ", " << average_idle/5 << ", " << average_en/5 << ", " << average_et/5 << ", " << std::endl;
-        average_idle = 0;
-        average_en = 0;
-        average_et = 0;
     }
 }
