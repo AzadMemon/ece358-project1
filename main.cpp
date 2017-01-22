@@ -79,7 +79,7 @@ void server(int current_time) {
 }
 
 
-int yolo() {
+int experiment() {
   // Calculating first arrival time
   arrival_time = calculate_arrival_time();
 
