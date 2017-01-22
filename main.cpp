@@ -117,7 +117,7 @@ int main() {
 
                 lambda = r0 * C_transmission_rate / L_packet_size;
 
-                yolo();
+                experiment();
 
                 average_idle += idle_counter;
                 average_loss += loss_counter/total_num_packets_generated;
